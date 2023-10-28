@@ -249,6 +249,22 @@ if (require("ggcorrplot")) {
                    repos = "https://cloud.r-project.org")
 }
 
+## caret ----
+if (require("caret")) {
+  require("caret")
+} else {
+  install.packages("caret", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## dplyr ----
+if (require("dplyr")) {
+  require("dplyr")
+} else {
+  install.packages("dplyr", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
 # STEP 2. Load the Dataset ----
 # Source: http://insideairbnb.com/cape-town/
 # Save the dataset as "listings_summary_cape_town.csv" inside the data folder
@@ -317,12 +333,12 @@ vis_miss(airbnb_cape_town) +
 ## OPTION 1: Remove the observations with missing values ----
 # We can decide to remove all the observations that have missing values
 # as follows:
-airbnb_cape_town_removed_obs <- airbnb_cape_town %>% filter(complete.cases(.))
+airbnb_cape_town_removed_obs <- airbnb_cape_town %>% dplyr::filter(complete.cases(.))
 
 # The initial dataset had 21,120 observations and 16 variables
 dim(airbnb_cape_town)
 
-# The filtered dataset has 16,205 observations and 16 variables
+# The filtered dataset has 16,206 observations and 16 variables
 dim(airbnb_cape_town_removed_obs)
 
 # Are there missing values in the dataset?
