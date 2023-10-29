@@ -203,6 +203,139 @@ fourfoldplot(as.table(confusion_matrix), color = c("grey", "lightblue"),
 
 
 ## B. Non-Linear Algorithms ----
+### 1. CART - Decision trees without caret ----
+#Training the model
+Loan_default_model_rpart <- rpart(Default ~ ., data = Loan_Default_train)
+
+#Displaying model
+print(Loan_default_model_rpart)
+
+#Making predictions using the test dataset
+predictions <- predict(Loan_default_model_rpart,
+                       Loan_Default_test[, 1:4],
+                       type = "class")
+
+#Displaying the evaluation metrics
+table(predictions, Loan_Default_test$Default)
+
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("grey", "lightblue"),
+             main = "Confusion Matrix")
+
+
+
+### 2. Naïve Bayes Classifier without Caret
+#Training the model
+Loan_default_model_nb <- naiveBayes(Default ~ .,
+                                data = Loan_Default_train)
+
+#Displaying the model's details
+print(Loan_default_model_nb)
+
+#Making predictions
+predictions <- predict(Loan_default_model_nb,
+                       Loan_Default_test[, 1:4])
+
+# Displaying the evaluation metrics
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("grey", "lightblue"),
+             main = "Confusion Matrix")
+
+
+
+
+### 3. kNN using caret ----
+# Training the model
+set.seed(7)
+# Resampling using 10 - fold cross validation
+train_control <- trainControl(method = "cv", number = 10)
+Loan_default_caret_model_knn <- train(Default ~ ., data = Loan_Default,
+                                  method = "knn", metric = "Accuracy",
+                                  preProcess = c("center", "scale"),
+                                  trControl = train_control)
+#Displaying the model
+print(Loan_default_caret_model_knn)
+
+# Making predictions
+predictions <- predict(Loan_default_caret_model_knn,
+                       Loan_Default_test[, 1:4])
+
+# Displaying evaluation metrics
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("grey", "lightblue"),
+             main = "Confusion Matrix")
+
+
+### 4a. Support Vector Machine without CARET ----
+# Training the model 
+Loan_default_model_svm <- ksvm(Default ~ ., data = Loan_Default_train,
+                           kernel = "rbfdot")
+
+#Displaying the model
+print(Loan_default_model_svm)
+
+# Make predictions 
+predictions <- predict(Loan_default_model_svm, Loan_Default_test[, 1:4],
+                       type = "response")
+
+# Displaying the evaluation metrics 
+table(predictions, Loan_Default_test$Default)
+
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("grey", "lightblue"),
+             main = "Confusion Matrix")
+
+### 4b. Support Vector Machine using CARET ----
+# Training the model 
+set.seed(7)
+# Resampling using 10-fold cross validation
+train_control <- trainControl(method = "cv", number = 10)
+Loan_default_caret_model_svm_radial <- 
+  train(Default ~ ., data = Loan_Default_train, method = "svmRadial",
+        metric = "Accuracy", trControl = train_control)
+
+# Display the model
+print(Loan_default_caret_model_svm_radial)
+
+# Making predictions 
+predictions <- predict(Loan_default_caret_model_svm_radial,
+                       Loan_Default_test[, 1:4])
+
+# Display the evaluation metrics 
+table(predictions, Loan_Default_test$Default)
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("grey", "lightblue"),
+             main = "Confusion Matrix")
+
+
+
+
+
+
+
+
+
+
 
 
 
