@@ -328,7 +328,7 @@ fourfoldplot(as.table(confusion_matrix), color = c("grey", "lightblue"),
              main = "Confusion Matrix")
 
 
-# ASSOCIATION ----
+# 5. ASSOCIATION ----
 # STEP 1. Install and Load the Required Packages ----
 ## arules ----
 if (require("arules")) {
@@ -419,181 +419,91 @@ if (require("RColorBrewer")) {
 }
 
 # STEP 2. Load and pre-process the dataset ----
-## FORMAT 1: Single Format ----
-# An example of the single format transaction data is presented
-# here: "data/transactions_single_format.csv" and loaded as follows:
-transactions_single_format <-
-  read.transactions("data/transactions_single_format.csv",
-                    format = "single", cols = c(1, 2))
-
-View(transactions_single_format)
-print(transactions_single_format)
+## Using Basket Format----
+transactions_basket_format <-
+  read.transactions("data/transactions_basket_format.csv",
+                    format = "basket", sep = ",", cols = 2)
+View(transactions_basket_format)
+print(transactions_basket_format)
 
 # Reading the set
-retail <- read_excel("data/GroceryStoreDataSet.csv")
-dim(retail)
+retail <- read_csv("data/new_online_retail.csv")
+dim(retail_2)
 
 ### Handle missing values ----
 # Are there missing values in the dataset?
-any_na(retail)
+any_na(retail_2)
 
 # How many?
-n_miss(retail)
+n_miss(retail_2)
 
 # What is the proportion of missing data in the entire dataset?
-prop_miss(retail)
+prop_miss(retail_2)
 
 # What is the number and percentage of missing values grouped by
 # each variable?
-miss_var_summary(retail)
+miss_var_summary(retail_2)
 
 # Which variables contain the most missing values?
-gg_miss_var(retail)
+gg_miss_var(retail_2)
 
 # Which combinations of variables are missing together?
-gg_miss_upset(retail)
+gg_miss_upset(retail_2)
 
-#### Removing the observations with missing values ----
-retail_removed_obs <- retail %>% filter(complete.cases(.))
+#### Remove the variables with missing values ----
+# Using 'InvoiceNo' instead of 'CustomerID-
+retail_2_removed_vars <- retail_2 %>% dplyr::select(-CustomerID)
 
-# We end up with 406,829 observations to create the association rules
-# instead of the initial 541,909 observations.
-dim(retail_removed_obs)
+dim(retail_2_removed_vars)
 
 # Are there missing values in the dataset?
-any_na(retail_removed_obs)
-
-## Record only the `items` variable ----
-# Notice that at this point, the single format ensures that each transaction is
-# recorded in a single observation. We therefore no longer require the
-# `invoice_no` variable and all the other variables in the data frame except
-# the itemsets.
-
-### OPTION 1 ----
-transaction_data <-
-  transaction_data %>%
-  dplyr::select("items" = V1)
-#  %>% mutate(items = paste("{", items, "}", sep = ""))
-
-View(transaction_data)
-
-## Save the transactions in CSV format ----
-### OPTION 1 ----
-write.csv(transaction_data,
-          "data/transactions_basket_format_grocery_store.csv",
-          quote = FALSE, row.names = FALSE)
-
-## Read the transactions from the CSV file ----
-### OPTION 1 ----
-tr <-
-  read.transactions("data/transactions_basket_format_grocery_store.csv",
-    format = "basket",
-    header = TRUE,
-    rm.duplicates = TRUE,
-    sep = ","
-  )
-
-print(tr)
-summary(tr)
-
-# STEP 3. Create the association rules ----
-association_rules_prod_name <- apriori(tr,
-                                       parameter = list(support = 0.01,
-                                                        confidence = 0.8,
-                                                        maxlen = 10))
-
-# STEP 3. Print the association rules ----
-## OPTION 1 ----
-# Threshold values of support = 0.01, confidence = 0.8, and
-# maxlen = 10 results in a total of 83 rules when using the
-# stock code to identify the products.
-summary(association_rules)
-inspect(association_rules)
-# To view the top 10 rules
-inspect(association_rules[1:10])
-plot(association_rules)
-
-### Remove redundant rules ----
-# We can remove the redundant rules as follows:
-subset_rules <-
-  which(colSums(is.subset(association_rules,
-                          association_rules)) > 1)
-length(subset_rules)
-association_rules_no_reps <- association_rules[-subset_rules]
-
-# This results in 40 non-redundant rules (instead of the initial 83 rules)
-summary(association_rules_no_reps)
-inspect(association_rules_no_reps)
-
-write(association_rules_no_reps,
-      file = "rules/association_rules_grocery.csv")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+any_na(retail_2_removed_vars)
+
+# What is the number and percentage of missing values grouped by
+# each variable?
+miss_var_summary(retail_2_removed_vars)
+
+# We now remove the observations that do not have a value for the description
+# variable.
+retail_2_removed_vars_obs <- retail_2_removed_vars %>% filter(complete.cases(.))
+
+dim(retail_2_removed_vars_obs)
+
+## Identify categorical variables ----
+# Ensure the customer's country is recorded as categorical data
+retail_2_removed_vars_obs %>% mutate(Country = as.factor(Country))
+
+# Also ensure that the description (name of the product purchased) is recorded
+# as categorical data
+retail_2_removed_vars_obs %>% mutate(Description = as.factor(Description))
+str(retail_2_removed_vars_obs)
+
+dim(retail_2_removed_vars_obs)
+head(retail_2_removed_vars_obs)
+
+## Record the date and time variables in the correct format ----
+# Ensure that InvoiceDate is stored in the correct date format.
+# We can separate the date and the time into 2 different variables.
+retail_2_removed_vars_obs$trans_date <-
+  as.Date(retail_2_removed_vars_obs$InvoiceDate)
+
+# Extract time from InvoiceDate and store it in another variable
+retail_2_removed_vars_obs$trans_time <-
+  format(retail_2_removed_vars_obs$InvoiceDate, "%H:%M:%S")
+
+## Record the InvoiceNo in the correct format (numeric) ----
+# Convert InvoiceNo into numeric
+retail_2_removed_vars_obs$invoice_no <-
+  as.numeric(as.character(retail_2_removed_vars_obs$InvoiceNo))
+
+# The NAs introduced by coercion represent cancelled invoices. The OLTP system
+# of the business represents cancelled invoice with the prefix "C", e.g.
+# "C536391".
+
+# Are there missing values in the dataset?
+any_na(retail_2_removed_vars_obs)
+
+# What is the number and percentage of missing values grouped by
+# each variable?
+miss_var_summary(retail_2_removed_vars_obs)
+dim(retail_2_removed_vars_obs)
