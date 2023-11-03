@@ -1,0 +1,820 @@
+---
+title: "Business Intelligence Lab 7"
+author: "Chicken-nuggets"
+date: "30th october 2023"
+output:
+  github_document: 
+    toc: yes
+    toc_depth: 4
+    fig_width: 6
+    fig_height: 4
+    df_print: default
+editor_options:
+  chunk_output_type: console
+---
+
+# Student Details
+
++--------------------------------+-------------------------------+
+| **Student ID Number and Name** | 1.  137118 Fatoumata Camara   |
+|                                | 2.  127039 Ayan Ahmed         |
+|                                | 3.  136869 Birkanwal Bhambra  |
+|                                | 4.  127602 Trevor Anjere      |
+|                                | 5.  133824 Habiba Siba        |
++--------------------------------+-------------------------------+
+| **BBIT 4.2 Group**             | Chicken-nuggets               |
++--------------------------------+-------------------------------+
+
+
+
+```{r Required packages}
+if (require("stats")) {
+  require("stats")
+} else {
+  install.packages("stats", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+if (require("corrplot")) {
+  require("corrplot")
+} else {
+  install.packages("stats", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## mlbench 
+if (require("mlbench")) {
+  require("mlbench")
+} else {
+  install.packages("mlbench", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## caret 
+if (require("caret")) {
+  require("caret")
+} else {
+  install.packages("caret", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## MASS 
+if (require("MASS")) {
+  require("MASS")
+} else {
+  install.packages("MASS", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## glmnet 
+if (require("glmnet")) {
+  require("glmnet")
+} else {
+  install.packages("glmnet", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## e1071 
+if (require("e1071")) {
+  require("e1071")
+} else {
+  install.packages("e1071", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## kernlab 
+if (require("kernlab")) {
+  require("kernlab")
+} else {
+  install.packages("kernlab", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## rpart 
+if (require("rpart")) {
+  require("rpart")
+} else {
+  install.packages("rpart", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+if (require("arules")) {
+  require("arules")
+} else {
+  install.packages("arules", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## arulesViz ----
+if (require("arulesViz")) {
+  require("arulesViz")
+} else {
+  install.packages("arulesViz", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## tidyverse ----
+if (require("tidyverse")) {
+  require("tidyverse")
+} else {
+  install.packages("tidyverse", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## readxl ----
+if (require("readxl")) {
+  require("readxl")
+} else {
+  install.packages("readxl", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+
+## lubridate
+if (require("lubridate")) {
+  require("lubridate")
+} else {
+  install.packages("lubridate", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+
+
+## plyr 
+if (require("plyr")) {
+  require("plyr")
+} else {
+  install.packages("plyr", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+
+## dplyr ----
+if (require("dplyr")) {
+  require("dplyr")
+} else {
+  install.packages("dplyr", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## naniar ----
+if (require("naniar")) {
+  require("naniar")
+} else {
+  install.packages("naniar", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## RColorBrewer ----
+if (require("RColorBrewer")) {
+  require("RColorBrewer")
+} else {
+  install.packages("RColorBrewer", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")}
+}
+```
+
+
+```{r Logistic regression withour caret}
+# Loading and splitting the dataset
+library(readr)
+Loan_Default <- read_csv("data/Loan_Default.csv", 
+    col_types = cols(Employed = col_factor(levels = c("1", 
+        "0")), Default = col_factor(levels = c("1", 
+        "0"))))
+View(Loan_Default) 
+
+# An 80:20 split of the dataset
+train_index <- createDataPartition(Loan_Default$Default,
+                                   p = 0.8,
+                                   list = FALSE)
+Loan_Default_train <- Loan_Default[train_index, ]
+Loan_Default_test <- Loan_Default[-train_index, ]
+
+#Training the model
+Loan_Default_model_glm <- glm(Default ~ ., data = Loan_Default_train,
+                          family = binomial(link = "logit"))
+
+# Displaying the model's details
+print(Loan_Default_model_glm)
+
+# Making predictions on the test data
+probabilities <- predict(Loan_Default_model_glm, Loan_Default_test, type = "response")
+print(probabilities)
+# A probability greater than 0.5 = 1(default), less than 0.5 = 0(non-default)
+predictions <- ifelse(probabilities > 0.5, 1, 0)
+print(predictions)
+# Displaying the model's evaluation metrics
+table(predictions, Loan_Default_test$Default)
+
+```
+
+
+```{r Logistic Regression Using caret}
+#1b. Logistic Regression Using caret 
+# Since we've already loaded and split the dataset, we go straight to training the model
+# Applying 10-fold cross validation resampling method
+train_control <- trainControl(method = "cv", number = 10)
+set.seed(7)
+Loan_Default_caret_model_logistic <-
+  train(Default ~ ., data = Loan_Default_train,
+        method = "regLogistic", metric = "Accuracy",
+        preProcess = c("center", "scale"), trControl = train_control)
+# Displaying the model
+print(Loan_Default_caret_model_logistic)
+# Make Predictions
+predictions <- predict(Loan_Default_caret_model_logistic,
+                       Loan_Default_test[, 1:4])
+# Displaying the model's evaluation metrics
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("grey", "lightblue"),
+             main = "Confusion Matrix")
+```
+
+
+
+```{r Linear Discriminant Analysis without caret}
+# 2a.Linear Discriminant Analysis without caret ----
+# Training the model
+Loan_default_model_lda <- lda(Default ~ ., data = Loan_Default_train)
+# Displaying the model
+print(Loan_default_model_lda)
+# Making predictions
+predictions <- predict(Loan_default_model_lda,
+                       Loan_Default_test[, 1:4])$class
+# Display Model's evaluation metrics
+table(predictions, Loan_Default_test$Default)
+```
+
+
+
+
+```{r Linear Discriminant Analysis using caret}
+# 2b. Linear Discriminant Analysis using caret 
+# Train the model
+set.seed(10)
+## applying Leave One Out Cross Validation resampling method
+train_control <- trainControl(method = "LOOCV")
+Loan_default_caret_model_lda <- train(Default ~ .,
+                                  data = Loan_Default_train,
+                                  method = "lda", metric = "Accuracy",
+                                  preProcess = c("center", "scale"),
+                                  trControl = train_control)
+# Display the model's details
+print(Loan_default_caret_model_lda)
+
+# Making predictions on the test dataset
+predictions <- predict(Loan_default_caret_model_lda,
+                       Loan_Default_test[, 1:4])
+
+# Display the model's evaluation metrics 
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("grey", "pink"),
+             main = "Confusion Matrix")
+```
+
+
+
+```{r Regularized Linear Regression without caret}
+# 3a. Regularized Linear Regression without caret
+# Splitting to get the feature matrix and target matrix
+x <- as.matrix(Loan_Default[, 1:4])
+y <- as.matrix(Loan_Default[, 5])
+
+# Training the model; using elastic net 
+Loan_default_model_glm <- glmnet(x, y, family = "binomial",
+                             alpha = 0.5, lambda = 0.001)
+
+# Displaying the model's details 
+print(Loan_default_model_glm)
+
+# Making predictions 
+predictions <- predict(Loan_default_model_glm, x, type = "class")
+
+# Displaying the model's evaluation metrics 
+table(predictions, Loan_Default$Default)
+```
+
+
+
+```{r  Regularized Linear Regression using caret}
+# 3b. Regularized Linear Regression using caret
+# Training the model
+set.seed(7)
+
+# Resampling using 10 fold cross validation
+train_control <- trainControl(method = "cv", number = 10)
+Loan_default_caret_model_glmnet <-
+  train(Default ~ ., data = Loan_Default_train,
+        method = "glmnet", metric = "Accuracy",
+        preProcess = c("center", "scale"), trControl = train_control)
+
+#Display the model
+print(Loan_default_caret_model_glmnet)
+
+# Make predictions
+predictions <- predict(Loan_default_caret_model_glmnet,
+                       Loan_Default_test[, 1:4])
+
+# Display the model's evaluation metrics
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("blue", "lightblue"),
+             main = "Confusion Matrix")
+```
+
+
+
+```{r B. Non-Linear Algorithms}
+# 1. CART - Decision trees without caret ----
+#Training the model
+Loan_default_model_rpart <- rpart(Default ~ ., data = Loan_Default_train)
+
+#Displaying model
+print(Loan_default_model_rpart)
+
+#Making predictions using the test dataset
+predictions <- predict(Loan_default_model_rpart,
+                       Loan_Default_test[, 1:4],
+                       type = "class")
+
+#Displaying the evaluation metrics
+table(predictions, Loan_Default_test$Default)
+
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("brown", "orange"),
+             main = "Confusion Matrix")
+
+```
+
+
+```{r Naïve Bayes Classifier without Caret}
+# 2. Naïve Bayes Classifier without Caret
+#Training the model
+Loan_default_model_nb <- naiveBayes(Default ~ .,
+                                data = Loan_Default_train)
+
+#Displaying the model's details
+print(Loan_default_model_nb)
+
+#Making predictions
+predictions <- predict(Loan_default_model_nb,
+                       Loan_Default_test[, 1:4])
+
+# Displaying the evaluation metrics
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("black", "purple"),
+             main = "Confusion Matrix")
+```
+
+
+
+```{r kNN using caret}
+##3. kNN using caret
+# Training the model
+set.seed(7)
+# Resampling using 10 - fold cross validation
+train_control <- trainControl(method = "cv", number = 10)
+Loan_default_caret_model_knn <- train(Default ~ ., data = Loan_Default,
+                                  method = "knn", metric = "Accuracy",
+                                  preProcess = c("center", "scale"),
+                                  trControl = train_control)
+#Displaying the model
+print(Loan_default_caret_model_knn)
+
+# Making predictions
+predictions <- predict(Loan_default_caret_model_knn,
+                       Loan_Default_test[, 1:4])
+
+# Displaying evaluation metrics
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("yellow", "blue"),
+             main = "Confusion Matrix")
+```
+
+
+
+```{r Support Vector Machine without CARET}
+# 4a. Support Vector Machine without CARET 
+# Training the model 
+Loan_default_model_svm <- ksvm(Default ~ ., data = Loan_Default_train,
+                           kernel = "rbfdot")
+
+#Displaying the model
+print(Loan_default_model_svm)
+
+# Make predictions 
+predictions <- predict(Loan_default_model_svm, Loan_Default_test[, 1:4],
+                       type = "response")
+
+# Displaying the evaluation metrics 
+table(predictions, Loan_Default_test$Default)
+
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("grey", "lightgreen"),
+             main = "Confusion Matrix")
+
+```
+
+
+
+```{r Support Vector Machine using CARET}
+# 4b. Support Vector Machine using CARET 
+# Training the model 
+set.seed(7)
+# Resampling using 10-fold cross validation
+train_control <- trainControl(method = "cv", number = 10)
+Loan_default_caret_model_svm_radial <- 
+  train(Default ~ ., data = Loan_Default_train, method = "svmRadial",
+        metric = "Accuracy", trControl = train_control)
+
+# Display the model
+print(Loan_default_caret_model_svm_radial)
+
+# Making predictions 
+predictions <- predict(Loan_default_caret_model_svm_radial,
+                       Loan_Default_test[, 1:4])
+
+# Display the evaluation metrics 
+table(predictions, Loan_Default_test$Default)
+confusion_matrix <-
+  caret::confusionMatrix(predictions,
+                         Loan_Default_test[, 1:5]$Default)
+print(confusion_matrix)
+
+fourfoldplot(as.table(confusion_matrix), color = c("violet", "darkblue"),
+             main = "Confusion Matrix")
+```
+
+
+```{r CLUSTERING}
+
+library(readr)
+wine_clustering <- read_csv("data/wine_clustering.csv")
+View(wine_clustering)
+
+
+
+wine_clustering$Proline <- factor(wine_clustering$Proline)
+
+
+str(wine_clustering)
+dim(wine_clustering)
+head(wine_clustering)
+summary(wine_clustering)
+
+## Check for missing data
+
+
+if (require("naniar")) {
+  require("naniar")
+} else {
+  install.packages("naniar", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+any_na(wine_clustering)
+
+
+n_miss(wine_clustering)
+
+
+prop_miss(wine_clustering)
+
+
+miss_var_summary(wine_clustering)
+
+
+gg_miss_var(wine_clustering)
+
+
+gg_miss_upset(wine_clustering)
+
+
+vis_miss(wine_clustering) +
+  theme(axis.text.x = element_text(angle = 80))
+
+## OPTION 1: Remove the observations with missing values
+
+wine_clustering_removed_obs <- wine_clustering %>% dplyr::filter(complete.cases(.))
+
+# The initial dataset had 21,120 observations and 16 variables
+dim(wine_clustering)
+
+# The filtered dataset has 16,206 observations and 16 variables
+dim(wine_clustering_removed_obs)
+
+# Are there missing values in the dataset?
+any_na(wine_clustering_removed_obs)
+
+
+##  Perform EDA and Feature Selection
+
+if (require("corrplot")) {
+  require("corrplot")
+} else {
+  install.packages("stats", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+wine_clustering_removed_obs$Proline <- as.numeric(as.character(wine_clustering_removed_obs$Proline))
+
+cor(wine_clustering_removed_obs[, c(1, 2, 5, 7, 8, 9, 10, 11, 12, 13)]) %>%
+  corrplot(method = "square")
+
+# Plot the scatter plots
+ggplot(wine_clustering_removed_obs,
+       aes(Alcohol, Color_Intensity,
+           color = Malic_Acid)) +
+  geom_point(alpha = 0.5) +
+  xlab("Alcohol") +
+  ylab("Color_Intensity")
+
+# Plot of Alcohol against Hue
+ggplot(wine_clustering_removed_obs,
+       aes(Alcohol, Hue,
+           color = Malic_Acid)) +
+  geom_point(alpha = 0.5) +
+  xlab("Alcohol") +
+  ylab("Hue")
+
+
+#Plot of Alcohol against Malic Acid
+
+ggplot(wine_clustering_removed_obs,
+       aes(Alcohol, Malic_Acid,
+           color = Malic_Acid)) +
+  geom_point(alpha = 0.5) +
+  xlab("Alcohol") +
+  ylab("Malic Acid")
+
+# Transform data
+
+summary(wine_clustering_removed_obs)
+model_of_the_transform <- preProcess(wine_clustering_removed_obs,
+                                     method = c("scale", "center"))
+print(model_of_the_transform)
+wine_clustering_removed_obs_std <- predict(model_of_the_transform, # nolint
+                                           wine_clustering_removed_obs)
+summary(wine_clustering_removed_obs_std)
+sapply(wine_clustering_removed_obs_std[, c(1, 2, 5, 7, 8, 9, 10, 11, 12, 13)], sd)
+
+
+wine_clustering_vars <-
+  wine_clustering_removed_obs_std[, c(1, 2, 5, 7, 8, 9, 10, 11, 12, 13)]
+
+## Create the clusters using the K-Means Clustering Algorithm
+set.seed(7)
+kmeans_cluster <- kmeans(wine_clustering_vars, centers = 3, nstart = 20)
+
+# We then decide the maximum number of clusters to investigate
+n_clusters <- 8
+
+
+wss <- numeric(n_clusters)
+
+set.seed(7)
+
+for (i in 1:n_clusters) {
+  
+  kmeans_cluster <- kmeans(wine_clustering_vars, centers = i, nstart = 20)
+  # Save the within cluster sum of squares
+  wss[i] <- kmeans_cluster$tot.withinss
+}
+
+## plotting a scree plot
+
+wss_df <- tibble(clusters = 1:n_clusters, wss = wss)
+
+scree_plot <- ggplot(wss_df, aes(x = clusters, y = wss, group = 1)) +
+  geom_point(size = 4) +
+  geom_line() +
+  scale_x_continuous(breaks = c(2, 4, 6, 8)) +
+  xlab("Number of Clusters")
+
+scree_plot
+
+# We can add guides to make it easier to identify the plateau (or "elbow").
+scree_plot +
+  geom_hline(
+    yintercept = wss,
+    linetype = "dashed",
+    col = c(rep("#000000", 5), "purple", rep("#000000", 2))
+  )
+
+k <- 6
+set.seed(7)
+kmeans_cluster <- kmeans(wine_clustering_vars, centers = k, nstart = 20)
+
+## Add the cluster number as a label for each observation
+
+wine_clustering_removed_obs$cluster_id <- factor(kmeans_cluster$cluster)
+
+## View the results by plotting scatter plots with the labelled cluster 
+ggplot(wine_clustering_removed_obs, aes(Alcohol, Proline,
+                                         color = cluster_id)) +
+  geom_point(alpha = 0.5) +
+  xlab("Alcohol") +
+  ylab("Proline")
+
+ggplot(wine_clustering_removed_obs,
+       aes(Alcohol, Hue, color = cluster_id)) +
+  geom_point(alpha = 0.5) +
+  xlab("Alcohol") +
+  ylab("Hue")
+
+ggplot(wine_clustering_removed_obs,
+       aes(Alcohol, Color_Intensity,
+           color = cluster_id)) +
+  geom_point(alpha = 0.5) +
+  xlab("Alcohol") +
+  ylab("Color Intesity")
+
+```
+
+
+```{r Association}
+
+#  ASSOCIATION ----
+# STEP 1. Install and Load the Required Packages 
+## arulesViz ----
+if (require("arulesViz")) {
+  require("arulesViz")
+} else {
+  install.packages("arulesViz", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## tidyverse ----
+if (require("tidyverse")) {
+  require("tidyverse")
+} else {
+  install.packages("tidyverse", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## readxl ----
+if (require("readxl")) {
+  require("readxl")
+} else {
+  install.packages("readxl", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## knitr ----
+if (require("knitr")) {
+  require("knitr")
+} else {
+  install.packages("knitr", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## ggplot2 ----
+if (require("ggplot2")) {
+  require("ggplot2")
+} else {
+  install.packages("ggplot2", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## lubridate ----
+if (require("lubridate")) {
+  require("lubridate")
+} else {
+  install.packages("lubridate", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## plyr ----
+if (require("plyr")) {
+  require("plyr")
+} else {
+  install.packages("plyr", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## dplyr ----
+if (require("dplyr")) {
+  require("dplyr")
+} else {
+  install.packages("dplyr", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## naniar ----
+if (require("naniar")) {
+  require("naniar")
+} else {
+  install.packages("naniar", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## RColorBrewer ----
+if (require("RColorBrewer")) {
+  require("RColorBrewer")
+} else {
+  install.packages("RColorBrewer", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+# STEP 2. Load and pre-process the dataset ----
+
+# Reading the set
+retail_2 <- read_csv("data/new_online_retail.csv")
+dim(retail_2)
+
+### Handle missing values ----
+# Are there missing values in the dataset?
+any_na(retail_2)
+
+# How many?
+n_miss(retail_2)
+
+# What is the proportion of missing data in the entire dataset?
+prop_miss(retail_2)
+
+# What is the number and percentage of missing values grouped by
+# each variable?
+miss_var_summary(retail_2)
+
+# Which variables contain the most missing values?
+gg_miss_var(retail_2)
+
+# Which combinations of variables are missing together?
+gg_miss_upset(retail_2)
+
+
+# We now remove the observations that do not have a value for the description
+# variable.
+#retail_2_removed_vars_obs <- retail_2_removed_vars %>% filter(complete.cases(.))
+
+#dim(retail_2_removed_vars_obs)
+
+## Identify categorical variables ----
+# Ensure the customer's country is recorded as categorical data
+#retail_2_removed_vars_obs %>% mutate(Country = as.factor(Country))
+
+# Also ensure that the description (name of the product purchased) is recorded
+# as categorical data
+#retail_2_removed_vars_obs %>% mutate(Description = as.factor(Description))
+#str(retail_2_removed_vars_obs)
+
+#dim(retail_2_removed_vars_obs)
+#head(retail_2_removed_vars_obs)
+
+## Record the date and time variables in the correct format ----
+# Ensure that InvoiceDate is stored in the correct date format.
+# We can separate the date and the time into 2 different variables.
+#retail_2_removed_vars_obs$trans_date <-
+#  as.Date(retail_2_removed_vars_obs$InvoiceDate)
+
+# Extract time from InvoiceDate and store it in another variable
+#retail_2_removed_vars_obs$trans_time <-
+ # format(retail_2_removed_vars_obs$InvoiceDate, "%H:%M:%S")
+
+## Record the InvoiceNo in the correct format (numeric) ----
+# Convert InvoiceNo into numeric
+#retail_2_removed_vars_obs$invoice_no <-
+ # as.numeric(as.character(retail_2_removed_vars_obs$InvoiceNo))
+
+# The NAs introduced by coercion represent cancelled invoices. The OLTP system
+# of the business represents cancelled invoice with the prefix "C", e.g.
+# "C536391".
+
+# Are there missing values in the dataset?
+#any_na(retail_2_removed_vars_obs)
+
+# What is the number and percentage of missing values grouped by
+# each variable?
+
+#miss_var_summary(retail_2_removed_vars_obs)
+#dim(retail_2_removed_vars_obs)
+
+
+```
+

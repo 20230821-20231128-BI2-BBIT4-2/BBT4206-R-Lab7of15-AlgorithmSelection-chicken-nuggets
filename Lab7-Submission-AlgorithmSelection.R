@@ -1,4 +1,4 @@
-# CLASSIFICATION ----
+
 ## Installing and loading packages ====
 if (require("stats")) {
   require("stats")
@@ -63,14 +63,89 @@ if (require("rpart")) {
                    repos = "https://cloud.r-project.org")
 }
 
+if (require("arules")) {
+  require("arules")
+} else {
+  install.packages("arules", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## arulesViz ----
+if (require("arulesViz")) {
+  require("arulesViz")
+} else {
+  install.packages("arulesViz", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## tidyverse ----
+if (require("tidyverse")) {
+  require("tidyverse")
+} else {
+  install.packages("tidyverse", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## readxl ----
+if (require("readxl")) {
+  require("readxl")
+} else {
+  install.packages("readxl", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+
+
+
+
+## lubridate ----
+if (require("lubridate")) {
+  require("lubridate")
+} else {
+  install.packages("lubridate", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## plyr ----
+if (require("plyr")) {
+  require("plyr")
+} else {
+  install.packages("plyr", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## dplyr ----
+if (require("dplyr")) {
+  require("dplyr")
+} else {
+  install.packages("dplyr", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## naniar ----
+if (require("naniar")) {
+  require("naniar")
+} else {
+  install.packages("naniar", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## RColorBrewer ----
+if (require("RColorBrewer")) {
+  require("RColorBrewer")
+} else {
+  install.packages("RColorBrewer", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
 ## A. Linear Algorithms ----
 ### 1a. Logistic Regression without caret ----
 # Loading and splitting the dataset
 library(readr)
 Loan_Default <- read_csv("data/Loan_Default.csv", 
-    col_types = cols(Employed = col_factor(levels = c("1", 
-        "0")), Default = col_factor(levels = c("1", 
-        "0"))))
+                         col_types = cols(Employed = col_factor(levels = c("1", 
+                                                                           "0")), Default = col_factor(levels = c("1", 
+                                                                                                                  "0"))))
 View(Loan_Default) 
 
 # An 80:20 split of the dataset
@@ -82,7 +157,7 @@ Loan_Default_test <- Loan_Default[-train_index, ]
 
 #Training the model
 Loan_Default_model_glm <- glm(Default ~ ., data = Loan_Default_train,
-                          family = binomial(link = "logit"))
+                              family = binomial(link = "logit"))
 
 # Displaying the model's details
 print(Loan_Default_model_glm)
@@ -136,10 +211,10 @@ set.seed(10)
 ## applying Leave One Out Cross Validation resampling method
 train_control <- trainControl(method = "LOOCV")
 Loan_default_caret_model_lda <- train(Default ~ .,
-                                  data = Loan_Default_train,
-                                  method = "lda", metric = "Accuracy",
-                                  preProcess = c("center", "scale"),
-                                  trControl = train_control)
+                                      data = Loan_Default_train,
+                                      method = "lda", metric = "Accuracy",
+                                      preProcess = c("center", "scale"),
+                                      trControl = train_control)
 # Display the model's details
 print(Loan_default_caret_model_lda)
 
@@ -163,7 +238,7 @@ y <- as.matrix(Loan_Default[, 5])
 
 # Training the model; using elastic net 
 Loan_default_model_glm <- glmnet(x, y, family = "binomial",
-                             alpha = 0.5, lambda = 0.001)
+                                 alpha = 0.5, lambda = 0.001)
 
 # Displaying the model's details 
 print(Loan_default_model_glm)
@@ -231,7 +306,7 @@ fourfoldplot(as.table(confusion_matrix), color = c("grey", "lightblue"),
 ### 2. Naïve Bayes Classifier without Caret
 #Training the model
 Loan_default_model_nb <- naiveBayes(Default ~ .,
-                                data = Loan_Default_train)
+                                    data = Loan_Default_train)
 
 #Displaying the model's details
 print(Loan_default_model_nb)
@@ -258,9 +333,9 @@ set.seed(7)
 # Resampling using 10 - fold cross validation
 train_control <- trainControl(method = "cv", number = 10)
 Loan_default_caret_model_knn <- train(Default ~ ., data = Loan_Default,
-                                  method = "knn", metric = "Accuracy",
-                                  preProcess = c("center", "scale"),
-                                  trControl = train_control)
+                                      method = "knn", metric = "Accuracy",
+                                      preProcess = c("center", "scale"),
+                                      trControl = train_control)
 #Displaying the model
 print(Loan_default_caret_model_knn)
 
@@ -281,7 +356,7 @@ fourfoldplot(as.table(confusion_matrix), color = c("grey", "lightblue"),
 ### 4a. Support Vector Machine without CARET ----
 # Training the model 
 Loan_default_model_svm <- ksvm(Default ~ ., data = Loan_Default_train,
-                           kernel = "rbfdot")
+                               kernel = "rbfdot")
 
 #Displaying the model
 print(Loan_default_model_svm)
@@ -328,7 +403,181 @@ fourfoldplot(as.table(confusion_matrix), color = c("grey", "lightblue"),
              main = "Confusion Matrix")
 
 
-# 5. ASSOCIATION ----
+
+## CLUSTERING----
+
+#load Dataset
+
+library(readr)
+wine_clustering <- read_csv("data/wine_clustering.csv")
+View(wine_clustering)
+
+
+
+wine_clustering$Proline <- factor(wine_clustering$Proline)
+
+
+str(wine_clustering)
+dim(wine_clustering)
+head(wine_clustering)
+summary(wine_clustering)
+
+## Check for missing data
+
+any_na(wine_clustering)
+
+
+n_miss(wine_clustering)
+
+
+prop_miss(wine_clustering)
+
+
+miss_var_summary(wine_clustering)
+
+
+gg_miss_var(wine_clustering)
+
+
+gg_miss_upset(wine_clustering)
+
+
+vis_miss(wine_clustering) +
+  theme(axis.text.x = element_text(angle = 80))
+
+## OPTION 1: Remove the observations with missing values
+
+wine_clustering_removed_obs <- wine_clustering %>% dplyr::filter(complete.cases(.))
+
+# The initial dataset had 21,120 observations and 16 variables
+dim(wine_clustering)
+
+# The filtered dataset has 16,206 observations and 16 variables
+dim(wine_clustering_removed_obs)
+
+# Are there missing values in the dataset?
+any_na(wine_clustering_removed_obs)
+
+
+##  Perform EDA and Feature Selection
+
+wine_clustering_removed_obs$Proline <- as.numeric(as.character(wine_clustering_removed_obs$Proline))
+
+cor(wine_clustering_removed_obs[, c(1, 2, 5, 7, 8, 9, 10, 11, 12, 13)]) %>%
+  corrplot(method = "square")
+
+# Plot the scatter plots
+ggplot(wine_clustering_removed_obs,
+       aes(Alcohol, Color_Intensity,
+           color = Malic_Acid)) +
+  geom_point(alpha = 0.5) +
+  xlab("Alcohol") +
+  ylab("Color_Intensity")
+
+# Plot of Alcohol against Hue
+ggplot(wine_clustering_removed_obs,
+       aes(Alcohol, Hue,
+           color = Malic_Acid)) +
+  geom_point(alpha = 0.5) +
+  xlab("Alcohol") +
+  ylab("Hue")
+
+
+#Plot of Alcohol against Malic Acid
+
+ggplot(wine_clustering_removed_obs,
+       aes(Alcohol, Malic_Acid,
+           color = Malic_Acid)) +
+  geom_point(alpha = 0.5) +
+  xlab("Alcohol") +
+  ylab("Malic Acid")
+
+# Transform data
+
+summary(wine_clustering_removed_obs)
+model_of_the_transform <- preProcess(wine_clustering_removed_obs,
+                                     method = c("scale", "center"))
+print(model_of_the_transform)
+wine_clustering_removed_obs_std <- predict(model_of_the_transform, # nolint
+                                           wine_clustering_removed_obs)
+summary(wine_clustering_removed_obs_std)
+sapply(wine_clustering_removed_obs_std[, c(1, 2, 5, 7, 8, 9, 10, 11, 12, 13)], sd)
+
+
+wine_clustering_vars <-
+  wine_clustering_removed_obs_std[, c(1, 2, 5, 7, 8, 9, 10, 11, 12, 13)]
+
+## Create the clusters using the K-Means Clustering Algorithm
+set.seed(7)
+kmeans_cluster <- kmeans(wine_clustering_vars, centers = 3, nstart = 20)
+
+# We then decide the maximum number of clusters to investigate
+n_clusters <- 8
+
+
+wss <- numeric(n_clusters)
+
+set.seed(7)
+
+for (i in 1:n_clusters) {
+  
+  kmeans_cluster <- kmeans(wine_clustering_vars, centers = i, nstart = 20)
+  # Save the within cluster sum of squares
+  wss[i] <- kmeans_cluster$tot.withinss
+}
+
+## plotting a scree plot
+
+wss_df <- tibble(clusters = 1:n_clusters, wss = wss)
+
+scree_plot <- ggplot(wss_df, aes(x = clusters, y = wss, group = 1)) +
+  geom_point(size = 4) +
+  geom_line() +
+  scale_x_continuous(breaks = c(2, 4, 6, 8)) +
+  xlab("Number of Clusters")
+
+scree_plot
+
+# We can add guides to make it easier to identify the plateau (or "elbow").
+scree_plot +
+  geom_hline(
+    yintercept = wss,
+    linetype = "dashed",
+    col = c(rep("#000000", 5), "purple", rep("#000000", 2))
+  )
+
+k <- 6
+set.seed(7)
+kmeans_cluster <- kmeans(wine_clustering_vars, centers = k, nstart = 20)
+
+## Add the cluster number as a label for each observation
+
+wine_clustering_removed_obs$cluster_id <- factor(kmeans_cluster$cluster)
+
+## View the results by plotting scatter plots with the labelled cluster ----
+ggplot(wine_clustering_removed_obs, aes(Alcohol, Proline,
+                                        color = cluster_id)) +
+  geom_point(alpha = 0.5) +
+  xlab("Alcohol") +
+  ylab("Proline")
+
+ggplot(wine_clustering_removed_obs,
+       aes(Alcohol, Hue, color = cluster_id)) +
+  geom_point(alpha = 0.5) +
+  xlab("Alcohol") +
+  ylab("Hue")
+
+ggplot(wine_clustering_removed_obs,
+       aes(Alcohol, Color_Intensity,
+           color = cluster_id)) +
+  geom_point(alpha = 0.5) +
+  xlab("Alcohol") +
+  ylab("Color Intesity")
+
+
+
+
+#  ASSOCIATION ----
 # STEP 1. Install and Load the Required Packages ----
 ## arules ----
 if (require("arules")) {
@@ -427,7 +676,7 @@ View(transactions_basket_format)
 print(transactions_basket_format)
 
 # Reading the set
-retail <- read_csv("data/new_online_retail.csv")
+retail_2 <- read_csv("data/new_online_retail.csv")
 dim(retail_2)
 
 ### Handle missing values ----
@@ -452,7 +701,7 @@ gg_miss_upset(retail_2)
 
 #### Remove the variables with missing values ----
 # Using 'InvoiceNo' instead of 'CustomerID-
-retail_2_removed_vars <- retail_2 %>% dplyr::select(-CustomerID)
+retail_2_removed_vars <- retail_2 %>% dplyr::filter(complete.cases(.))
 
 dim(retail_2_removed_vars)
 
@@ -507,3 +756,4 @@ any_na(retail_2_removed_vars_obs)
 # each variable?
 miss_var_summary(retail_2_removed_vars_obs)
 dim(retail_2_removed_vars_obs)
+
